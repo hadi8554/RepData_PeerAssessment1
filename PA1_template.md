@@ -1,0 +1,103 @@
+---
+title: "Course Project 1"
+output: html_document
+---
+
+##Loading and preprocessing the data
+```{r}
+setwd("D:/Coursera/Reproducible Research/Assignment 1")
+activity_or<-read.csv("activity.csv")
+activity<-activity_or[complete.cases(activity_or),]
+```
+
+##What is mean total number of steps taken per day?
+1. Calculate the total number of steps taken per day
+```{r}
+stepsByDay <- tapply(activity$steps, activity$date, sum, na.rm=TRUE)
+```
+
+
+2. Make a histogram of the total number of steps taken each day
+```{r}
+hist(stepsByDay,
+     main="Histogram for Steps by Day",
+     xlab="total steps per day")
+```
+
+3. Calculate and report the mean and median of the total number of steps taken per day
+```{r}
+stepsByDayMean <- mean(stepsByDay,na.rm=TRUE)
+stepsByDayMedian <- median(stepsByDay,na.rm=TRUE)
+```
+Mean: `r stepsByDayMean`
+Median: `r stepsByDayMedian`
+
+##What is the average daily activity pattern?
+```{r}
+averageStepsPerTimeBlock <- aggregate(x=list(meanSteps=activity$steps), by=list(interval=activity$interval), FUN=mean, na.rm=TRUE)
+```
+
+1. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+```{r}
+library(ggplot2)
+ggplot(data=averageStepsPerTimeBlock, aes(x=interval, y=meanSteps)) +
+    geom_line() +
+    xlab("5-minute interval") +
+    ylab("average number of steps taken") 
+```
+
+
+2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r}
+maxSteps <- which.max(averageStepsPerTimeBlock$meanSteps)
+timeMostSteps <- averageStepsPerTimeBlock[maxSteps,'interval']
+```
+Max number of steps happens at interval: `r timeMostSteps` 
+
+
+##Imputing missing values
+1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+```{r}
+numMissingValues <- length(which(is.na(activity_or$steps)))
+```
+Number of Missing Values: `r numMissingValues`
+
+2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+```{r}
+activityImputed <- activity_or
+activityImputed$steps[is.na(activityImputed$steps)] <- mean(activityImputed$steps,na.rm=TRUE)
+```
+
+4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+```{r}
+stepsByDayImputed <- tapply(activityImputed$steps, activityImputed$date, sum)
+hist(stepsByDayImputed,
+     main="Histogram for Steps by Day",
+     xlab="total steps per day")
+
+stepsByDayMeanImputed <- mean(stepsByDayImputed)
+stepsByDayMedianImputed <- median(stepsByDayImputed)
+```
+Mean (Imputed):`r stepsByDayMeanImputed`
+Median (Imputed):`r stepsByDayMedianImputed`
+
+
+##Are there differences in activity patterns between weekdays and weekends?
+1. Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+```{r}
+activityImputed$dateType <-  ifelse(as.POSIXlt(activityImputed$date)$wday %in% c(0,6), 'weekend', 'weekday')
+```
+
+2. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
+
+```{r}
+averagedActivityImputed <- aggregate(steps ~ interval + dateType, data=activityImputed, mean)
+ggplot(averagedActivityImputed, aes(interval, steps)) + 
+    geom_line() + 
+    facet_grid(dateType ~ .) +
+    xlab("5-minute interval") + 
+    ylab("avarage number of steps")
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
